@@ -98,12 +98,12 @@ impl S3Service {
             .key(key)
             .body(contents.into())
             .content_type(content_type)
-            .acl(aws_sdk_s3::types::ObjectCannedAcl::PublicRead)
             .send()
             .await
             .map_err(|e| AppError::InternalError(format!("Failed to upload to S3: {e}")))?;
 
-        let download_url = format!("{}/{}/{}", self.public_url, self.bucket, key);
+        // public_url already contains the bucket path, so just append the key
+        let download_url = format!("{}/{}", self.public_url, key);
 
         tracing::info!(
             key = %key,
