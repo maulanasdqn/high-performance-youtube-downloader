@@ -16,7 +16,7 @@ use crate::infrastructure::http::responses::{DownloadResponse, VideoInfoResponse
 
 #[utoipa::path(
     post,
-    path = "/video-info",
+    path = "/api/v1/video-info",
     tag = "Downloads",
     request_body = VideoInfoRequest,
     responses(
@@ -35,7 +35,7 @@ pub async fn get_video_info(
 
 #[utoipa::path(
     post,
-    path = "/downloads",
+    path = "/api/v1/downloads",
     tag = "Downloads",
     request_body = CreateDownloadRequest,
     responses(
@@ -70,7 +70,7 @@ pub async fn create_download<R: DownloadRepository + 'static>(
 
 #[utoipa::path(
     get,
-    path = "/downloads/{id}",
+    path = "/api/v1/downloads/{id}",
     tag = "Downloads",
     params(
         ("id" = Uuid, Path, description = "Download ID")
@@ -90,7 +90,7 @@ pub async fn get_download<R: DownloadRepository + 'static>(
 
 #[utoipa::path(
     get,
-    path = "/downloads",
+    path = "/api/v1/downloads",
     tag = "Downloads",
     params(PaginationQuery),
     responses(
@@ -110,7 +110,7 @@ pub async fn list_downloads<R: DownloadRepository + 'static>(
 
 #[utoipa::path(
     post,
-    path = "/downloads/{id}/cancel",
+    path = "/api/v1/downloads/{id}/cancel",
     tag = "Downloads",
     params(
         ("id" = Uuid, Path, description = "Download ID")
