@@ -24,6 +24,11 @@ utoipa.workspace = true
 uuid.workspace = true
 which.workspace = true
 
+# S3 client
+aws-sdk-s3.workspace = true
+aws-config.workspace = true
+aws-credential-types.workspace = true
+
 [lints]
 workspace = true
 

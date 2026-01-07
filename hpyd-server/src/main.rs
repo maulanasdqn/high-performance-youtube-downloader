@@ -10,8 +10,8 @@ use logger::init_logger;
 use router::build_router;
 use use_cases::init_use_cases;
 
-fn setup_app(config: &Config) -> axum::Router {
-    let use_cases = init_use_cases(config);
+async fn setup_app(config: &Config) -> axum::Router {
+    let use_cases = init_use_cases(config).await;
     build_router(use_cases, config)
 }
 
@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
     std::fs::create_dir_all(&config.download_dir)?;
     tracing::info!(download_dir = %config.download_dir, "Download directory ready");
 
-    let app = setup_app(&config);
+    let app = setup_app(&config).await;
 
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;

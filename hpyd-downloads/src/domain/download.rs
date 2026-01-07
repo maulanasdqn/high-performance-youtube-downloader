@@ -29,6 +29,7 @@ pub struct Download {
     pub progress: f32,
     pub file_path: Option<String>,
     pub file_size: Option<u64>,
+    pub download_url: Option<String>,
     pub error_message: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -49,6 +50,7 @@ impl Download {
             progress: 0.0,
             file_path: None,
             file_size: None,
+            download_url: None,
             error_message: None,
             created_at: now,
             updated_at: now,
@@ -76,11 +78,12 @@ impl Download {
         self.updated_at = Utc::now();
     }
 
-    pub fn complete(&mut self, file_path: String, file_size: u64) {
+    pub fn complete(&mut self, file_path: String, file_size: u64, download_url: Option<String>) {
         self.status = DownloadStatus::Completed;
         self.progress = 100.0;
         self.file_path = Some(file_path);
         self.file_size = Some(file_size);
+        self.download_url = download_url;
         self.completed_at = Some(Utc::now());
         self.updated_at = Utc::now();
     }

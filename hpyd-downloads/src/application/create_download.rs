@@ -7,18 +7,21 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
 use crate::domain::{Download, DownloadRepository, VideoQuality};
+use crate::infrastructure::S3Service;
 
 #[derive(Debug)]
 pub struct CreateDownload<R: DownloadRepository + 'static> {
     repository: Arc<R>,
     download_dir: PathBuf,
+    s3_service: Option<Arc<S3Service>>,
 }
 
 impl<R: DownloadRepository + 'static> CreateDownload<R> {
-    pub const fn new(repository: Arc<R>, download_dir: PathBuf) -> Self {
+    pub const fn new(repository: Arc<R>, download_dir: PathBuf, s3_service: Option<Arc<S3Service>>) -> Self {
         Self {
             repository,
             download_dir,
+            s3_service,
         }
     }
 
@@ -57,6 +60,7 @@ impl<R: DownloadRepository + 'static> CreateDownload<R> {
         let download_id = download.id;
         let repository = self.repository.clone();
         let download_dir = self.download_dir.clone();
+        let s3_service = self.s3_service.clone();
 
         tokio::spawn(async move {
             let result = Self::perform_download(
@@ -66,6 +70,7 @@ impl<R: DownloadRepository + 'static> CreateDownload<R> {
                 &download_dir,
                 download_id,
                 repository.clone(),
+                s3_service,
             )
             .await;
 
@@ -89,6 +94,7 @@ impl<R: DownloadRepository + 'static> CreateDownload<R> {
         download_dir: &PathBuf,
         download_id: uuid::Uuid,
         repository: Arc<R>,
+        s3_service: Option<Arc<S3Service>>,
     ) -> Result<(), AppError> {
         if let Ok(Some(mut dl)) = repository.find_by_id(&download_id).await {
             dl.start_fetching();
@@ -201,8 +207,43 @@ impl<R: DownloadRepository + 'static> CreateDownload<R> {
             .await
             .map_err(|e| AppError::InternalError(format!("Failed to get file metadata: {e}")))?;
 
+        // Upload to S3 if configured
+        let download_url = if let Some(s3) = s3_service {
+            if let Ok(Some(mut dl)) = repository.find_by_id(&download_id).await {
+                dl.start_processing();
+                let _ = repository.update(dl).await;
+            }
+
+            let file_name = file_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("video.mp4");
+            let s3_key = format!("downloaded-videos/{}-{}", download_id, file_name);
+
+            match s3.upload_file(&file_path, &s3_key).await {
+                Ok(url) => {
+                    tracing::info!(
+                        video_id = %video_id,
+                        download_url = %url,
+                        "File uploaded to S3"
+                    );
+                    Some(url)
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        video_id = %video_id,
+                        error = %e,
+                        "Failed to upload to S3, continuing without S3 URL"
+                    );
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
         if let Ok(Some(mut dl)) = repository.find_by_id(&download_id).await {
-            dl.complete(file_path.to_string_lossy().to_string(), metadata.len());
+            dl.complete(file_path.to_string_lossy().to_string(), metadata.len(), download_url.clone());
             let _ = repository.update(dl).await;
         }
 
@@ -210,6 +251,7 @@ impl<R: DownloadRepository + 'static> CreateDownload<R> {
             video_id = %video_id,
             file_path = %file_path.display(),
             size = %metadata.len(),
+            download_url = ?download_url,
             "Download completed"
         );
 

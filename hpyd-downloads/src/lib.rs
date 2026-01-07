@@ -8,6 +8,6 @@ pub use application::{
 pub use domain::{Download, DownloadRepository, DownloadStatus, VideoInfo, VideoQuality};
 pub use infrastructure::{
     download_routes, CreateDownloadRequest, DownloadResponse, InMemoryDownloadRepository,
-    VideoInfoRequest, VideoInfoResponse,
+    S3Config, S3Service, VideoInfoRequest, VideoInfoResponse,
 };
 
