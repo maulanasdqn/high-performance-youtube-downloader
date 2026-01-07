@@ -1,0 +1,10 @@
+[package]
+name = "hpyd-ui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# UI dependencies will be added when implementing the UI
+
+[lints]
+workspace = true

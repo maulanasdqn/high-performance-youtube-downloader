@@ -1,0 +1,19 @@
+[package]
+name = "hpyd-errors"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hpyd-types = { path = "../hpyd-types" }
+
+anyhow.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+utoipa.workspace = true
+
+[lints]
+workspace = true
+
