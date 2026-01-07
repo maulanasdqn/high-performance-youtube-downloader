@@ -29,6 +29,12 @@
 
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
+          # Pre-fetch swagger UI zip to avoid network access during build
+          swaggerUiZip = pkgs.fetchurl {
+            url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
+            sha256 = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
+          };
+
           src = pkgs.lib.cleanSourceWith {
             src = ./.;
             filter = path: type: (craneLib.filterCargoSources path type);
@@ -52,6 +58,14 @@
             ];
 
             OPENSSL_NO_VENDOR = 1;
+
+            # Copy swagger UI zip to build dir before build
+            preBuild = ''
+              mkdir -p $TMPDIR/swagger-ui
+              cp ${swaggerUiZip} $TMPDIR/swagger-ui/v5.17.14.zip
+              chmod 644 $TMPDIR/swagger-ui/v5.17.14.zip
+              export SWAGGER_UI_DOWNLOAD_URL="file://$TMPDIR/swagger-ui/v5.17.14.zip"
+            '';
           };
 
           cargoArtifacts = craneLib.buildDepsOnly commonArgs;
